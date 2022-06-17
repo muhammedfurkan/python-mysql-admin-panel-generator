@@ -11,8 +11,9 @@ from app.handler import *
 def login():
 	form = ServerInfo()
 	if form.validate_on_submit():
-		flash('Login requested for user {}, remember_me={}'.format(
-			form.username.data, form.remember_me.data))
+		flash(
+		    f'Login requested for user {form.username.data}, remember_me={form.remember_me.data}'
+		)
 		return redirect(url_for('databases'))
 	return render_template('index.html', form=form)
 
@@ -27,9 +28,9 @@ def connect():
 			charset='utf8mb4'
 		)
 		data = connect_to_db(mysql, "SHOW DATABASES")
-		result = ''
-		for database in data:
-			result += "<option value=\""+database[0]+"\">"+database[0]+"</option>"
+		result = ''.join(
+		    "<option value=\"" + database[0] + "\">" + database[0] + "</option>"
+		    for database in data)
 		json_data = {"status": "success", "result": result}
 		return json.dumps(json_data)
 	except:
@@ -45,5 +46,4 @@ def generate():
 		request.form["password"],
 		request.form["database"],
 		charset='utf8mb4')
-	data = generate_mage(mysql, request.form["createUsers"])
-	return data
+	return generate_mage(mysql, request.form["createUsers"])

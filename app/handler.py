@@ -9,21 +9,20 @@ def write_dir(path):
 	try:
 		os.mkdir(path)
 	except OSError:
-		return "<li>Creation of the directory %s failed</li>" % path
+		return f"<li>Creation of the directory {path} failed</li>"
 	else:
-		return "<li>Successfully created the directory %s</li>" % path
+		return f"<li>Successfully created the directory {path}</li>"
 
 
 # function to write files
 def write_file(filename, data):
 	try:
-		f = open(filename, "w+")
-		f.write(data)
-		f.close()
+		with open(filename, "w+") as f:
+			f.write(data)
 	except IOError:
-		return "<li>Creation of the file %s failed</li>" % filename
+		return f"<li>Creation of the file {filename} failed</li>"
 	else:
-		return "<li>Successfully created the file %s</li>" % filename
+		return f"<li>Successfully created the file {filename}</li>"
 
 
 # function to copy files to locations
@@ -31,9 +30,9 @@ def copy_file(old_file, new_file):
 	try:
 		copyfile(old_file, new_file)
 	except IOError:
-		return "<li>Creation of the file %s failed</li>" % new_file
+		return f"<li>Creation of the file {new_file} failed</li>"
 	else:
-		return "<li>Successfully created the file %s</li>" % new_file
+		return f"<li>Successfully created the file {new_file}</li>"
 
 
 # connect to the database
@@ -41,10 +40,7 @@ def connect_to_db(mysql, query):
 	cursor = mysql.cursor()
 	cursor.execute(query)
 	data = cursor.fetchall()
-	if data is None:
-		return "Couldn't connect to MySQL database"
-	else:
-		return data
+	return "Couldn't connect to MySQL database" if data is None else data
 
 
 # generating a random icon for categories in the admin panel
@@ -96,13 +92,13 @@ def generate_mage(mysql, create_users):
 	path = "generated/" + getattr(mysql, 'db').decode('utf-8') + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 	# gather success info and display to user at the end
-	message = "Your new MAGE panel is located in: <strong>" + path + "<br><br>"
+	message = f"Your new MAGE panel is located in: <strong>{path}<br><br>"
 	message += "The operations that were performed are: </strong><ul>"
 
 	# write the project directories
 	message += write_dir(path)
-	message += write_dir(path + "/templates")
-	message += write_dir(path + "/static")
+	message += write_dir(f"{path}/templates")
+	message += write_dir(f"{path}/static")
 
 	# load all tables in database
 	cursor.execute("SHOW TABLES")
@@ -110,9 +106,8 @@ def generate_mage(mysql, create_users):
 	tables = [a[0] for a in get_all_tables]
 
 	# create the users table and add a dummy user
-	if create_users == "true":
-		if "users" not in tables:
-			cursor.execute("""
+	if create_users == "true" and "users" not in tables:
+		cursor.execute("""
 				CREATE TABLE IF NOT EXISTS `users`
 				(`id` int NOT NULL AUTO_INCREMENT, 
 				`name` varchar(255) NOT NULL, 
@@ -122,18 +117,18 @@ def generate_mage(mysql, create_users):
 				ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1
 			""")
 
-			# inserting the entry for admin, password is MD5'ed
-			cursor.execute("""INSERT INTO users (name, email, password, role)
+		# inserting the entry for admin, password is MD5'ed
+		cursor.execute("""INSERT INTO users (name, email, password, role)
 				VALUES (
 				'Admin', 
 				'admin@example.org', 
 				'pbkdf2:sha256:150000$R5Mx0zoD$92ad711a1ee26a70f9483779154355c30c10aac29ec5e8c36173778f706131f6',
 				1)""")
-			mysql.commit()
+		mysql.commit()
 
-			# add the 'users' table to the list of tables and sort the list
-			tables.append('users')
-			tables.sort()
+		# add the 'users' table to the list of tables and sort the list
+		tables.append('users')
+		tables.sort()
 
 	# the generation process starts here
 	# adding the basic structure of app.py
@@ -213,7 +208,7 @@ def index():
 	for (index, table_name) in enumerate(tables):
 
 		# loading all the columns in a table and getting the primary key
-		cursor.execute("DESC " + table_name)
+		cursor.execute(f"DESC {table_name}")
 		all_columns = cursor.fetchall()
 		modifier = all_columns[0]
 
@@ -351,8 +346,8 @@ def edit_{0}(modifier_id, act):
 {% endblock %}"""
 
 		# writing files for 'create/update/display' for each table
-		current_page_template = path + "/templates/%s.html" % table_name
-		current_edit_page_template = path + "/templates/edit_%s.html" % table_name
+		current_page_template = path + f"/templates/{table_name}.html"
+		current_edit_page_template = path + f"/templates/edit_{table_name}.html"
 
 		message += write_file(current_page_template, current_html_page)
 		message += write_file(current_edit_page_template, current_html_edit_page)
@@ -433,20 +428,18 @@ if __name__ == "__main__":
 	app.run(debug=True)
 """
 	# copying files from MAGE library to the project
-	message += copy_file("library/base.html", path + "/templates/base.html")
-	message += copy_file("library/index.html", path + "/templates/index.html")
-	message += copy_file("library/login.html", path + "/templates/login.html")
-	message += copy_file("library/style.css", path + "/static/style.css")
-	message += copy_file("library/handler.py", path + "/handler.py")
-	message += copy_file("library/requirements.txt", path + "/requirements.txt")
+	message += copy_file("library/base.html", f"{path}/templates/base.html")
+	message += copy_file("library/index.html", f"{path}/templates/index.html")
+	message += copy_file("library/login.html", f"{path}/templates/login.html")
+	message += copy_file("library/style.css", f"{path}/static/style.css")
+	message += copy_file("library/handler.py", f"{path}/handler.py")
+	message += copy_file("library/requirements.txt", f"{path}/requirements.txt")
 
 	# writing final files
-	message += write_file(path + "/templates/sidebar.html", sidebar)
-	message += write_file(path + "/app.py", the_app)
+	message += write_file(f"{path}/templates/sidebar.html", sidebar)
+	message += write_file(f"{path}/app.py", the_app)
 	message += "</ul><br>"
 
 	message += '<a class="btn btn-info center-block" href="./">Create Again!</a>'
 
-	json_data = {"status": "finished", "message": message}
-
-	return json_data
+	return {"status": "finished", "message": message}
